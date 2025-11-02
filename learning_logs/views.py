@@ -1,0 +1,139 @@
+from django.db.models import Q
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Topic, Entry
+from .forms import TopicForm
+from .forms import EntryForm
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
+
+# Create your views here.
+
+def index(request):
+    """The home page for Learning Log"""
+    return render(request, 'learning_logs/index.html')
+
+@login_required
+def topics(request):
+    """Show all topics."""
+    topics = Topic.objects.filter(owner=request.user).order_by('-date_added') # Order by date_added in descending order
+    context = {'topics': topics}
+    return render(request, 'learning_logs/topics.html', context)
+
+@login_required
+def topic(request, topic_id):
+    """Show a single topic and all its entries."""
+    # Make sure the topic belongs to the current user.
+    topic = get_object_or_404(Topic, id=topic_id, owner=request.user)
+    entries = topic.entry_set.order_by('-date_added')
+    context = {'topic': topic, 'entries': entries}
+    return render(request, 'learning_logs/topic.html', context)
+
+@login_required
+def new_topic(request):
+    """Add a new topic."""
+    if request.method != 'POST':
+        # No data submitted; create a blank form
+        form = TopicForm()
+    else:
+        # POST data submitted; process data.
+        form = TopicForm(data=request.POST)
+        if form.is_valid():
+            new_topic = form.save(commit=False)
+            new_topic.owner = request.user
+            new_topic.save()
+            messages.success(request, f'Topic "{new_topic.text}" has been created successfully.')
+            return redirect('learning_logs:topics')  # Redirect to topics page
+
+    context = {'form': form}
+    return render(request, 'learning_logs/new_topic.html', context)
+
+@login_required
+def new_entry(request, topic_id):
+    topic = get_object_or_404(Topic, id=topic_id, owner=request.user)
+
+    if request.method != 'POST':
+        form = EntryForm()
+    else:
+        form = EntryForm(data=request.POST)
+        if form.is_valid():
+            new_entry = form.save(commit=False)
+            new_entry.topic = topic
+            new_entry.save()
+            messages.success(request, 'New entry has been added successfully.')
+            return redirect('learning_logs:topic', topic_id=topic_id)
+
+    context = {'topic': topic, 'form': form}
+    return render(request, 'learning_logs/new_entry.html', context)
+
+@login_required
+def edit_entry(request, entry_id):
+    entry = get_object_or_404(Entry, id=entry_id, topic__owner=request.user)
+    topic = entry.topic
+
+    if request.method != 'POST':
+        form = EntryForm(instance=entry)
+    else:
+        form = EntryForm(instance=entry, data=request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Entry has been updated successfully.')
+            return redirect('learning_logs:topic', topic_id=topic.id)
+
+    context = {'entry': entry, 'topic': topic, 'form': form}
+    return render(request, 'learning_logs/edit_entry.html', context)
+
+
+@login_required
+def search_results(request):
+    """Show search results for topics and entries."""
+    query = request.GET.get('q')
+    topics = Topic.objects.none()
+    entries = Entry.objects.none()
+
+    if query:
+        # Find all topics owned by the user that match the query
+        topics = Topic.objects.filter(
+            owner=request.user,
+            text__icontains=query
+        ).distinct()
+
+        # Find all entries where the entry or its topic matches the query
+        entries = Entry.objects.filter(
+            Q(topic__owner=request.user),
+            Q(text__icontains=query) | Q(topic__text__icontains=query)
+        ).select_related('topic').distinct()
+
+    # The context is passed to the template without any text processing
+    context = {'query': query, 'topics': topics, 'entries': entries}
+    return render(request, 'learning_logs/search_results.html', context)
+
+
+@login_required
+def delete_topic(request, topic_id):
+    """Delete a topic and all its entries."""
+    topic = get_object_or_404(Topic, id=topic_id, owner=request.user)
+    
+    if request.method == 'POST':
+        topic_name = topic.text
+        topic.delete()
+        messages.success(request, f'Topic "{topic_name}" and all its entries have been deleted successfully.')
+        return redirect('learning_logs:topics')
+    
+    # For GET requests, redirect to topics page
+    return redirect('learning_logs:topics')
+
+
+@login_required  
+def delete_entry(request, entry_id):
+    """Delete an entry."""
+    entry = get_object_or_404(Entry, id=entry_id, topic__owner=request.user)
+    topic = entry.topic
+    
+    if request.method == 'POST':
+        entry.delete()
+        messages.success(request, 'Entry has been deleted successfully.')
+        return redirect('learning_logs:topic', topic_id=topic.id)
+    
+    # For GET requests, redirect to topic page
+    return redirect('learning_logs:topic', topic_id=topic.id)
