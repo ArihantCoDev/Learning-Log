@@ -154,6 +154,6 @@ Contributions are welcome! To contribute:
 
 Aditya - [GitHub Profile](https://github.com/aditya-is22)
 
-Project Link: [https://github.com/aditya-is22/learning_log](https://github.com/aditya-is22/learning_log)
+Project Link: [https://github.com/ArihantCoDev/Learning-Log](https://github.com/ArihantCoDev/Learning-Log)
 
 ---
