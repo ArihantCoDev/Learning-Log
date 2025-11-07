@@ -62,8 +62,8 @@ Follow these steps to set up the project locally.
 
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/aditya-is22/learning_log.git
-    cd learning_log
+    git clone https://github.com/ArihantCoDev/Learning-Log.git
+    cd Learning-Log
     ```
 
 2. **Create and activate a virtual environment:**
