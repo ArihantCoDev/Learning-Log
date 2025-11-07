@@ -1,7 +1,5 @@
 # Learning Log
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-46E2D2?style=for-the-badge&logo=render)](https://devs-learning-log.onrender.com/)
-
 A web-based application built with Django that enables users to register an account and keep a log of topics they are learning. Each user can create topics, add timestamped entries, and organize their personal learning journey.
 
 ---
